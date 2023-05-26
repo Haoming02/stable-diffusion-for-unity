@@ -110,9 +110,12 @@ namespace StableDiffusion
         private static SessionOptions Options()
         {
             var sessionOptions = new SessionOptions();
-            sessionOptions.GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL;
 
-            try { sessionOptions.AppendExecutionProvider_CUDA(); }
+            try
+            {
+                sessionOptions.GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL;
+                sessionOptions.AppendExecutionProvider_CUDA();
+            }
             //catch
             //{
             //    sessionOptions.EnableMemoryPattern = false;

@@ -9,9 +9,8 @@
 /[Bb]uilds/
 /[Ll]ogs/
 /[Mm]emoryCaptures/
-/[Aa]ssets/[Pp]lugins/
-/[Aa]ssets/[Ss]treamingAssets/
 /[Uu]serSettings/
+/[Aa]ssets/StreamingAssets/unet/weights.pb
 
 # Asset meta data should only be ignored when the corresponding asset is also ignored
 !/[Aa]ssets/**/*.meta

@@ -41,8 +41,7 @@ namespace StableDiffusion
 
         public static int[] CreateUncondInput()
         {
-            var inputIds = new List<int>();
-            inputIds.Add(49406);
+            var inputIds = new List<int>() { 49406 };
 
             var pad = Enumerable.Repeat(blankTokenValue, modelMaxLength - inputIds.Count()).ToArray();
             inputIds.AddRange(pad);

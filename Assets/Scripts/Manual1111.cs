@@ -26,12 +26,14 @@ public class Manual1111 : MonoBehaviour
     void Awake()
     {
         StableDiffusion.Main.Init(
-            Application.streamingAssetsPath + "/Models/" + "unet" + ".onnx",
-            Application.streamingAssetsPath + "/Models/" + "encoder" + ".onnx",
-            Application.streamingAssetsPath + "/Models/" + "token" + ".onnx",
-            Application.streamingAssetsPath + "/Models/" + "ortextensions" + ".dll",
-            Application.streamingAssetsPath + "/Models/" + "vae" + ".onnx"
-            );
+            Application.streamingAssetsPath + "/unet/" + "model" + ".onnx",
+            Application.streamingAssetsPath + "/text_encoder/" + "model" + ".onnx",
+            Application.streamingAssetsPath + "/tokenizer/" + "cliptokenizer" + ".onnx",
+            Application.streamingAssetsPath + "/tokenizer/" + "ortextensions" + ".dll",
+            Application.streamingAssetsPath + "/vae_decoder/" + "model" + ".onnx"
+        );
+
+        output = new Texture2D(resolution, resolution, TextureFormat.RGBA32, false);
     }
 
     public void SetSteps(float s)
@@ -46,15 +48,14 @@ public class Manual1111 : MonoBehaviour
         cfgLabel.text = $"{cfg}";
     }
 
-    public void UseLMS(bool v)
+    public void ToggleSampler()
     {
-        useLMS = v;
-        schedulerLabel.text = v ? "LMS" : "Euler A";
+        useLMS = !useLMS;
+        schedulerLabel.text = useLMS ? "LMS" : "Euler A";
     }
 
     public void Run()
     {
-        output = new Texture2D(resolution, resolution, TextureFormat.RGBA32, false);
         StableDiffusion.Main.Run(promptField.text, steps, cfg, Random.Range(0, int.MaxValue), ref output, useLMS);
         result.texture = output;
     }
