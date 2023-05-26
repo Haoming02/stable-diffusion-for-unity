@@ -7,9 +7,8 @@ This is an Unity project that allows you to run the Stable Diffusion pipeline wi
     - 20 Steps took: **~15sec** on `RTX 3060`; **~1min 10sec** on `i7-13700`
 #### Supported Versions
 - This project was originally built on [`ONNX Runtime 1.14`](https://onnxruntime.ai/docs/tutorials/csharp/csharp-gpu.html)
-  - **`CUDA v11.6`**
-    - *Tested on `CUDA v11.8` too*
-  - **`CUDNN v8.5.0.96`**
+  - Tested on **`CUDA v11.6`** and **`CUDA v11.8`**
+  - Tested on **`CUDNN v8.5.0.96`**
 
 ## Getting Started
 1. Download the official [weights.pb](https://huggingface.co/runwayml/stable-diffusion-v1-5/tree/onnx/unet), and place it into `~\Assets\StreamingAssets\unet`.
