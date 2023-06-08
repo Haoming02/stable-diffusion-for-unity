@@ -1,8 +1,9 @@
 using UnityEngine;
+using System.Collections;
 
 public class DemoScene : MonoBehaviour
 {
-    private const int steps = 4;
+    private const int steps = 6;
     private const float cfg = 4;
     private const bool useLMS = false;
 
@@ -13,18 +14,19 @@ public class DemoScene : MonoBehaviour
 
     [SerializeField]
     private Canvas loading;
+    [SerializeField]
+    private Canvas generating;
 
     [SerializeField]
     private Renderer skybox;
     [SerializeField]
     private Renderer painting;
 
-    private bool pipelineReady;
     private float xRotation = 0.0f;
 
     void Awake()
     {
-        Application.targetFrameRate = -1;
+        Application.targetFrameRate = 60;
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
@@ -32,7 +34,7 @@ public class DemoScene : MonoBehaviour
     void Start()
     {
         loading.enabled = true;
-        pipelineReady = false;
+        generating.enabled = false;
 
         StableDiffusion.Main.onReady += OnReady;
 
@@ -51,34 +53,56 @@ public class DemoScene : MonoBehaviour
     private void OnReady()
     {
         loading.enabled = false;
-        pipelineReady = true;
+        StartCoroutine(MainLoop());
     }
 
-    private void Update()
+    private IEnumerator MainLoop()
     {
-        if (!pipelineReady)
-            return;
+        while (true)
+        {
+            float x = Input.GetAxis("Mouse X");
+            float y = Input.GetAxis("Mouse Y");
 
-        float x = Input.GetAxis("Mouse X");
-        float y = Input.GetAxis("Mouse Y");
+            xRotation = Mathf.Clamp(xRotation - y, -60.0f, 60.0f);
 
+            Vector3 camRotation = transform.rotation.eulerAngles;
+            camRotation.x = xRotation;
+            camRotation.y += x;
 
-        xRotation = Mathf.Clamp(xRotation - y, -60.0f, 60.0f);
+            transform.rotation = Quaternion.Euler(camRotation);
 
-        Vector3 camRotation = transform.rotation.eulerAngles;
-        camRotation.x = xRotation;
-        camRotation.y += x;
+            if (Input.GetKeyDown(KeyCode.Alpha1))
+            {
+                generating.enabled = true;
 
-        transform.rotation = Quaternion.Euler(camRotation);
+                yield return null;
 
-        if (Input.GetKeyDown(KeyCode.Alpha1))
-            GenSkybox();
-        if (Input.GetKeyDown(KeyCode.Alpha2))
-            GenPainting();
+                GenSkybox();
+
+                yield return null;
+
+                generating.enabled = false;
+            }
+
+            if (Input.GetKeyDown(KeyCode.Alpha2))
+            {
+                generating.enabled = true;
+
+                yield return null;
+
+                GenPainting();
+
+                yield return null;
+
+                generating.enabled = false;
+            }
+
+            yield return null;
+        }
     }
 
-    private const string promptPainting = "high quality, best quality, masterpiece, painting, davinci";
-    private const string promptSkybox = "high quality, best quality, blue sky, cloud, sun, hdr";
+    private const string promptPainting = "high quality, best quality, masterpiece, a painting of a flower, by davinci";
+    private const string promptSkybox = "high quality, best quality, a dslr photo of blue sky with cloud and sun, hdr";
 
     private void GenPainting()
     {

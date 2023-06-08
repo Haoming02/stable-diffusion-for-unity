@@ -8,11 +8,6 @@ namespace StableDiffusion
     {
         private const int EmbeddingSize = 59136;    // 77 x 768
 
-        private static float[] textPromptEmbeddings;
-
-        private static int[] uncondInputTokens;
-        private static float[] uncondEmbedding;
-
         private static DenseTensor<float> textEmbeddings;
 
         public delegate void pipelineLoaded();
@@ -25,10 +20,8 @@ namespace StableDiffusion
             TextTokenizer.LoadModel(clipTokenizer, extension);
             VAE.LoadModel(vaeDecoder);
 
-            textPromptEmbeddings = new float[EmbeddingSize];
-
-            uncondInputTokens = TextTokenizer.CreateUncondInput();
-            uncondEmbedding = TextEncoder.Encode(uncondInputTokens).ToArray();
+            int[] uncondInputTokens = TextTokenizer.CreateUncondInput();
+            float[] uncondEmbedding = TextEncoder.Encode(uncondInputTokens).ToArray();
 
             textEmbeddings = new DenseTensor<float>(new[] { 2, 77, 768 });
             for (int i = 0; i < EmbeddingSize; i++)
@@ -40,7 +33,7 @@ namespace StableDiffusion
         public static void Run(string prompt, int steps, float cfg, int seed, ref Texture2D output, bool useLMS)
         {
             var textTokenized = TextTokenizer.TokenizeText(prompt);
-            textPromptEmbeddings = TextEncoder.Encode(textTokenized).ToArray();
+            float[] textPromptEmbeddings = TextEncoder.Encode(textTokenized).ToArray();
 
             for (int i = 0; i < EmbeddingSize; i++)
                 textEmbeddings[1, i / 768, i % 768] = textPromptEmbeddings[i];

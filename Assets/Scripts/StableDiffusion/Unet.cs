@@ -2,7 +2,10 @@ using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using Unity.Mathematics;
 using UnityEngine;
+using MathRandom = Unity.Mathematics.Random;
 
 namespace StableDiffusion
 {
@@ -14,6 +17,7 @@ namespace StableDiffusion
         private const int batch_size = 1;
         private const int height = 512;
         private const int width = 512;
+        private const int channels = 4;
 
         private const float scale = 1.0f / 0.18215f;
 
@@ -61,24 +65,23 @@ namespace StableDiffusion
 
         public static Tensor<float> GenerateLatentSample(int batchSize, int seed, float initNoiseSigma)
         {
-            Random.InitState(seed);
-            var channels = 4;
             var latents = new DenseTensor<float>(new[] { batchSize, channels, height / 8, width / 8 });
-            var latentsArray = latents.ToArray();
+            float[] latentsArray = latents.ToArray();
+            MathRandom random = new MathRandom((uint)seed);
 
-            for (int i = 0; i < latentsArray.Length; i++)
+            Parallel.For(0, latentsArray.Length, i =>
             {
                 // Generate a random number from a normal distribution with mean 0 and variance 1
-                var u1 = Random.Range(0.0f, 1.0f); // Uniform(0,1) random number
-                var u2 = Random.Range(0.0f, 1.0f); // Uniform(0,1) random number
-                var radius = Mathf.Sqrt(-2.0f * Mathf.Log(u1)); // Radius of polar coordinates
-                var theta = 2.0f * Mathf.PI * u2; // Angle of polar coordinates
-                var standardNormalRand = radius * Mathf.Cos(theta); // Standard normal random number
+                float u1 = random.NextFloat(); // Uniform(0,1) random number
+                float u2 = random.NextFloat(); // Uniform(0,1) random number
+                float radius = math.sqrt(-2.0f * math.log(u1)); // Radius of polar coordinates
+                float theta = 2.0f * math.PI * u2; // Angle of polar coordinates
+                float standardNormalRand = radius * math.cos(theta); // Standard normal random number
 
                 // add noise to latents with * scheduler.init_noise_sigma
                 // generate randoms that are negative and positive
-                latentsArray[i] = (float)standardNormalRand * initNoiseSigma;
-            }
+                latentsArray[i] = standardNormalRand * initNoiseSigma;
+            });
 
             latents = TensorHelper.CreateTensor(latentsArray, latents.Dimensions.ToArray());
 
@@ -90,7 +93,8 @@ namespace StableDiffusion
             var input = new List<NamedOnnxValue> {
                 NamedOnnxValue.CreateFromTensor("encoder_hidden_states", encoderHiddenStates),
                 NamedOnnxValue.CreateFromTensor("sample", sample),
-                NamedOnnxValue.CreateFromTensor("timestep", new DenseTensor<long>(new long[] { timeStep }, new int[] { 1 }))
+                NamedOnnxValue.CreateFromTensor("timestep", new DenseTensor<float>(new float[] { timeStep }, new int[] { 1 }))
+                // NamedOnnxValue.CreateFromTensor("timestep", new DenseTensor<long>(new long[] { timeStep }, new int[] { 1 }))
             };
 
             return input;
@@ -98,11 +102,13 @@ namespace StableDiffusion
 
         private static Tensor<float> performGuidance(Tensor<float> noisePred, Tensor<float> noisePredText, double guidanceScale)
         {
-            for (int i = 0; i < noisePred.Dimensions[0]; i++)
+            Parallel.For(0, noisePred.Dimensions[0], i =>
+            {
                 for (int j = 0; j < noisePred.Dimensions[1]; j++)
                     for (int k = 0; k < noisePred.Dimensions[2]; k++)
                         for (int l = 0; l < noisePred.Dimensions[3]; l++)
                             noisePred[i, j, k, l] = noisePred[i, j, k, l] + (float)guidanceScale * (noisePredText[i, j, k, l] - noisePred[i, j, k, l]);
+            });
 
             return noisePred;
         }
@@ -121,7 +127,10 @@ namespace StableDiffusion
             //    sessionOptions.EnableMemoryPattern = false;
             //    sessionOptions.AppendExecutionProvider_DML();
             //}
-            finally { sessionOptions.AppendExecutionProvider_CPU(); }
+            finally
+            {
+                sessionOptions.AppendExecutionProvider_CPU();
+            }
 
             return sessionOptions;
         }

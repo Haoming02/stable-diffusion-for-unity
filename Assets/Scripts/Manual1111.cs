@@ -25,6 +25,8 @@ public class Manual1111 : MonoBehaviour
 
     void Awake()
     {
+        Application.targetFrameRate = 60;
+
         StableDiffusion.Main.Init(
             Application.streamingAssetsPath + "/unet/" + "model" + ".onnx",
             Application.streamingAssetsPath + "/text_encoder/" + "model" + ".onnx",
