@@ -1,3 +1,6 @@
+<h1 align="center">No Longer Maintained</h1>
+<p align="center">This project was originally just a proof of concept. With so many new optimization techniques, such as <a href="https://huggingface.co/blog/sdxl_ort_inference">Turbo</a>, this implementation is extremely slow by today's standard...</p>
+
 # Stable Diffusion for Unity
 This is an Unity project that allows you to run the Stable Diffusion pipeline within Unity, achieved by using `ONNX` version of the models and `Microsoft.ML.OnnxRuntime` to inference at runtime. 
 
