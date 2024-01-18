@@ -3,9 +3,8 @@ using System.Collections;
 
 public class DemoScene : MonoBehaviour
 {
-    private const int steps = 6;
-    private const float cfg = 4;
-    private const bool useLMS = false;
+    private const int steps = 12;
+    private const float cfg = 6.0f;
 
     private const int resolution = 512;
 
@@ -24,11 +23,22 @@ public class DemoScene : MonoBehaviour
 
     private float xRotation = 0.0f;
 
+    private const string unetFolder = "/unet/";
+    private const string encoderFolder = "/text_encoder/";
+    private const string tokenizerFolder = "/tokenizer/";
+    private const string vaeFolder = "/vae_decoder/";
+
+    private const string extension = ".onnx";
+
     void Awake()
     {
-        Application.targetFrameRate = 60;
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        StableDiffusion.Main.onReady += OnReady;
+
+        paintingTexture = new Texture2D(resolution, resolution, TextureFormat.RGB24, false);
+        skyboxTexture = new Texture2D(resolution, resolution, TextureFormat.RGB24, false);
     }
 
     void Start()
@@ -36,18 +46,12 @@ public class DemoScene : MonoBehaviour
         loading.enabled = true;
         generating.enabled = false;
 
-        StableDiffusion.Main.onReady += OnReady;
-
         StableDiffusion.Main.Init(
-            Application.streamingAssetsPath + "/unet/" + "model" + ".onnx",
-            Application.streamingAssetsPath + "/text_encoder/" + "model" + ".onnx",
-            Application.streamingAssetsPath + "/tokenizer/" + "cliptokenizer" + ".onnx",
-            Application.streamingAssetsPath + "/tokenizer/" + "ortextensions" + ".dll",
-            Application.streamingAssetsPath + "/vae_decoder/" + "model" + ".onnx"
+            $"{Application.streamingAssetsPath}{unetFolder}model{extension}",
+            $"{Application.streamingAssetsPath}{encoderFolder}model{extension}",
+            $"{Application.streamingAssetsPath}{tokenizerFolder}cliptokenizer{extension}",
+            $"{Application.streamingAssetsPath}{vaeFolder}model{extension}"
         );
-
-        paintingTexture = new Texture2D(resolution, resolution, TextureFormat.RGBA32, false);
-        skyboxTexture = new Texture2D(resolution, resolution, TextureFormat.RGBA32, false);
     }
 
     private void OnReady()
@@ -56,16 +60,19 @@ public class DemoScene : MonoBehaviour
         StartCoroutine(MainLoop());
     }
 
+    private const float sensitivity = 50.0f;
+
     private IEnumerator MainLoop()
     {
         while (true)
         {
-            float x = Input.GetAxis("Mouse X");
-            float y = Input.GetAxis("Mouse Y");
+            float x = Input.GetAxis("Mouse X") * sensitivity * Time.deltaTime;
+            float y = Input.GetAxis("Mouse Y") * sensitivity * Time.deltaTime;
 
             xRotation = Mathf.Clamp(xRotation - y, -60.0f, 60.0f);
 
             Vector3 camRotation = transform.rotation.eulerAngles;
+
             camRotation.x = xRotation;
             camRotation.y += x;
 
@@ -101,23 +108,18 @@ public class DemoScene : MonoBehaviour
         }
     }
 
-    private const string promptPainting = "high quality, best quality, masterpiece, a painting of a flower, by davinci";
-    private const string promptSkybox = "high quality, best quality, a dslr photo of blue sky with cloud and sun, hdr";
+    private const string promptPainting = "a masterpiece painting of a flower vase, by davinci";
+    private const string promptSkybox = "a dslr photo of blue sky with cloud and sun, hdr";
 
     private void GenPainting()
     {
-        StableDiffusion.Main.Run(promptPainting, steps, cfg, Random.Range(0, int.MaxValue), ref paintingTexture, useLMS);
+        StableDiffusion.Main.Run(promptPainting, steps, cfg, Random.Range(0, int.MaxValue), ref paintingTexture);
         painting.material.mainTexture = paintingTexture;
     }
 
     private void GenSkybox()
     {
-        StableDiffusion.Main.Run(promptSkybox, steps, cfg, Random.Range(0, int.MaxValue), ref skyboxTexture, useLMS);
+        StableDiffusion.Main.Run(promptSkybox, steps, cfg, Random.Range(0, int.MaxValue), ref skyboxTexture);
         skybox.material.mainTexture = skyboxTexture;
-    }
-
-    void OnDisable()
-    {
-        StableDiffusion.Main.Free();
     }
 }

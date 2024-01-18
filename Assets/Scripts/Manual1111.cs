@@ -5,17 +5,13 @@ public class Manual1111 : MonoBehaviour
 {
     [SerializeField]
     private InputField promptField;
-
     [SerializeField]
     private Text stepsLabel;
     [SerializeField]
     private Text cfgLabel;
-    [SerializeField]
-    private Text schedulerLabel;
 
-    private int steps = 20;
-    private float cfg = 7;
-    private bool useLMS = false;
+    private int steps = 16;
+    private float cfg = 7.5f;
 
     private const int resolution = 512;
 
@@ -23,19 +19,23 @@ public class Manual1111 : MonoBehaviour
     private RawImage result;
     private Texture2D output;
 
+    private const string unetFolder = "/unet/";
+    private const string encoderFolder = "/text_encoder/";
+    private const string tokenizerFolder = "/tokenizer/";
+    private const string vaeFolder = "/vae_decoder/";
+
+    private const string extension = ".onnx";
+
     void Awake()
     {
-        Application.targetFrameRate = 60;
-
         StableDiffusion.Main.Init(
-            Application.streamingAssetsPath + "/unet/" + "model" + ".onnx",
-            Application.streamingAssetsPath + "/text_encoder/" + "model" + ".onnx",
-            Application.streamingAssetsPath + "/tokenizer/" + "cliptokenizer" + ".onnx",
-            Application.streamingAssetsPath + "/tokenizer/" + "ortextensions" + ".dll",
-            Application.streamingAssetsPath + "/vae_decoder/" + "model" + ".onnx"
+            $"{Application.streamingAssetsPath}{unetFolder}model{extension}",
+            $"{Application.streamingAssetsPath}{encoderFolder}model{extension}",
+            $"{Application.streamingAssetsPath}{tokenizerFolder}cliptokenizer{extension}",
+            $"{Application.streamingAssetsPath}{vaeFolder}model{extension}"
         );
 
-        output = new Texture2D(resolution, resolution, TextureFormat.RGBA32, false);
+        output = new Texture2D(resolution, resolution, TextureFormat.RGB24, false);
     }
 
     public void SetSteps(float s)
@@ -47,23 +47,12 @@ public class Manual1111 : MonoBehaviour
     public void SetGuidance(float g)
     {
         cfg = g;
-        cfgLabel.text = $"{cfg}";
-    }
-
-    public void ToggleSampler()
-    {
-        useLMS = !useLMS;
-        schedulerLabel.text = useLMS ? "LMS" : "Euler A";
+        cfgLabel.text = $"{Mathf.Round(cfg * 10.0f) / 10}";
     }
 
     public void Run()
     {
-        StableDiffusion.Main.Run(promptField.text, steps, cfg, Random.Range(0, int.MaxValue), ref output, useLMS);
+        StableDiffusion.Main.Run(promptField.text, steps, cfg, Random.Range(0, int.MaxValue), ref output);
         result.texture = output;
-    }
-
-    void OnDisable()
-    {
-        StableDiffusion.Main.Free();
     }
 }

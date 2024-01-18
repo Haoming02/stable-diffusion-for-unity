@@ -5,21 +5,16 @@ using System.Linq;
 
 namespace StableDiffusion
 {
-    public class TextEncoder
+    public static class TextEncoder
     {
-        private static InferenceSession textEncoderModel;
-
-        public static void LoadModel(string path)
-        {
-            textEncoderModel = new InferenceSession(path);
-        }
-
-        public static void Free() { textEncoderModel.Dispose(); }
+        private static string modelPath = null;
+        public static void SetModel(string path) => modelPath = path;
 
         public static DenseTensor<float> Encode(int[] tokenizedInput)
         {
-            var input_ids = TensorHelper.CreateTensor(tokenizedInput, new[] { 1, tokenizedInput.Count() });
+            using InferenceSession textEncoderModel = new InferenceSession(modelPath);
 
+            var input_ids = TensorHelper.CreateTensor(tokenizedInput, new[] { 1, tokenizedInput.Count() });
             var input = new List<NamedOnnxValue> { NamedOnnxValue.CreateFromTensor<int>("input_ids", input_ids) };
 
             var encoded = textEncoderModel.Run(input);

@@ -5,13 +5,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using Unity.Mathematics;
 using UnityEngine;
-using MathRandom = Unity.Mathematics.Random;
+using Random = Unity.Mathematics.Random;
 
 namespace StableDiffusion
 {
-    public class Unet
+    public static class Unet
     {
-        private static InferenceSession unetEncoderModel;
         private static SchedulerBase scheduler;
 
         private const int batch_size = 1;
@@ -21,18 +20,18 @@ namespace StableDiffusion
 
         private const float scale = 1.0f / 0.18215f;
 
-        public static void LoadModel(string path)
+        private static string modelPath = null;
+        public static void SetModel(string path)
         {
-            unetEncoderModel = new InferenceSession(path, Options());
+            modelPath = path;
+            scheduler = new EulerAncestralDiscreteScheduler();
         }
 
-        public static void Free() { unetEncoderModel.Dispose(); }
-
-        public static void Inference(int steps, DenseTensor<float> textEmbeddings, float cfg, int seed, ref Texture2D result, bool useLMS)
+        public static void Inference(int steps, DenseTensor<float> textEmbeddings, float cfg, int seed, ref Texture2D result)
         {
-            scheduler = useLMS ? new LMSDiscreteScheduler() : new EulerAncestralDiscreteScheduler();
-            var timesteps = scheduler.SetTimesteps(steps);
+            using InferenceSession unetEncoderModel = new InferenceSession(modelPath, Options());
 
+            var timesteps = scheduler.SetTimesteps(steps);
             var latents = GenerateLatentSample(batch_size, seed, scheduler.InitNoiseSigma);
             var input = new List<NamedOnnxValue>();
 
@@ -67,7 +66,7 @@ namespace StableDiffusion
         {
             var latents = new DenseTensor<float>(new[] { batchSize, channels, height / 8, width / 8 });
             float[] latentsArray = latents.ToArray();
-            MathRandom random = new MathRandom((uint)seed);
+            Random random = new Random((uint)seed);
 
             Parallel.For(0, latentsArray.Length, i =>
             {
@@ -84,7 +83,6 @@ namespace StableDiffusion
             });
 
             latents = TensorHelper.CreateTensor(latentsArray, latents.Dimensions.ToArray());
-
             return latents;
         }
 
@@ -94,7 +92,6 @@ namespace StableDiffusion
                 NamedOnnxValue.CreateFromTensor("encoder_hidden_states", encoderHiddenStates),
                 NamedOnnxValue.CreateFromTensor("sample", sample),
                 NamedOnnxValue.CreateFromTensor("timestep", new DenseTensor<float>(new float[] { timeStep }, new int[] { 1 }))
-                // NamedOnnxValue.CreateFromTensor("timestep", new DenseTensor<long>(new long[] { timeStep }, new int[] { 1 }))
             };
 
             return input;
@@ -102,13 +99,11 @@ namespace StableDiffusion
 
         private static Tensor<float> performGuidance(Tensor<float> noisePred, Tensor<float> noisePredText, double guidanceScale)
         {
-            Parallel.For(0, noisePred.Dimensions[0], i =>
-            {
+            for (int i = 0; i < noisePred.Dimensions[0]; i++)
                 for (int j = 0; j < noisePred.Dimensions[1]; j++)
                     for (int k = 0; k < noisePred.Dimensions[2]; k++)
                         for (int l = 0; l < noisePred.Dimensions[3]; l++)
                             noisePred[i, j, k, l] = noisePred[i, j, k, l] + (float)guidanceScale * (noisePredText[i, j, k, l] - noisePred[i, j, k, l]);
-            });
 
             return noisePred;
         }
@@ -122,13 +117,9 @@ namespace StableDiffusion
                 sessionOptions.GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL;
                 sessionOptions.AppendExecutionProvider_CUDA();
             }
-            //catch
-            //{
-            //    sessionOptions.EnableMemoryPattern = false;
-            //    sessionOptions.AppendExecutionProvider_DML();
-            //}
-            finally
+            catch
             {
+                sessionOptions.EnableMemoryPattern = false;
                 sessionOptions.AppendExecutionProvider_CPU();
             }
 

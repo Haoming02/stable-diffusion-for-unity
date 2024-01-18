@@ -4,19 +4,16 @@ using System.Linq;
 
 namespace StableDiffusion
 {
-    public class TensorHelper
+    public static class TensorHelper
     {
-        public static DenseTensor<T> CreateTensor<T>(T[] data, int[] dimensions)
-        {
-            return new DenseTensor<T>(data, dimensions); ;
-        }
+        private const int TensorSize = 64; // = 512 / 8
+
+        public static DenseTensor<T> CreateTensor<T>(T[] data, int[] dimensions) => new DenseTensor<T>(data, dimensions);
 
         public static DenseTensor<float> DivideTensorByFloat(float[] data, float value, int[] dimensions)
         {
             for (int i = 0; i < data.Length; i++)
-            {
                 data[i] = data[i] / value;
-            }
 
             return CreateTensor(data, dimensions);
         }
@@ -24,9 +21,7 @@ namespace StableDiffusion
         public static DenseTensor<float> MultipleTensorByFloat(float[] data, float value, int[] dimensions)
         {
             for (int i = 0; i < data.Length; i++)
-            {
                 data[i] = data[i] * value;
-            }
 
             return CreateTensor(data, dimensions);
         }
@@ -39,10 +34,9 @@ namespace StableDiffusion
         public static DenseTensor<float> AddTensors(float[] sample, float[] sumTensor, int[] dimensions)
         {
             for (var i = 0; i < sample.Length; i++)
-            {
                 sample[i] = sample[i] + sumTensor[i];
-            }
-            return CreateTensor(sample, dimensions); ;
+
+            return CreateTensor(sample, dimensions);
         }
 
         public static DenseTensor<float> AddTensors(Tensor<float> sample, Tensor<float> sumTensor)
@@ -59,9 +53,9 @@ namespace StableDiffusion
             {
                 for (int j = 0; j < 4; j++)
                 {
-                    for (int k = 0; k < 512 / 8; k++)
+                    for (int k = 0; k < TensorSize; k++)
                     {
-                        for (int l = 0; l < 512 / 8; l++)
+                        for (int l = 0; l < TensorSize; l++)
                         {
                             tensor1[i, j, k, l] = tensorToSplit[i, j, k, l];
                             tensor2[i, j, k, l] = tensorToSplit[i, j + 4, k, l];
@@ -99,9 +93,8 @@ namespace StableDiffusion
         public static DenseTensor<float> SubtractTensors(float[] sample, float[] subTensor, int[] dimensions)
         {
             for (var i = 0; i < sample.Length; i++)
-            {
                 sample[i] = sample[i] - subTensor[i];
-            }
+
             return CreateTensor(sample, dimensions);
         }
 
@@ -127,7 +120,6 @@ namespace StableDiffusion
             }
 
             latents = CreateTensor(latentsArray, latents.Dimensions.ToArray());
-
             return latents;
         }
     }

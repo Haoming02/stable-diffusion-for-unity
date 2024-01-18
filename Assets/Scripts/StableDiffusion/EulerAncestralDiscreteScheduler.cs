@@ -9,10 +9,11 @@ namespace StableDiffusion
     public class EulerAncestralDiscreteScheduler : SchedulerBase
     {
         private readonly string _predictionType;
+
         public override float InitNoiseSigma { get; set; }
-        public int num_inference_steps;
         public override List<int> Timesteps { get; set; }
         public override Tensor<float> Sigmas { get; set; }
+        public int num_inference_steps;
 
         public EulerAncestralDiscreteScheduler(
             int num_train_timesteps = 1000,
@@ -28,13 +29,9 @@ namespace StableDiffusion
             _predictionType = prediction_type;
 
             if (trained_betas != null)
-            {
                 betas = trained_betas;
-            }
             else if (beta_schedule == "linear")
-            {
                 betas = Enumerable.Range(0, num_train_timesteps).Select(i => beta_start + (beta_end - beta_start) * i / (num_train_timesteps - 1)).ToList();
-            }
             else if (beta_schedule == "scaled_linear")
             {
                 var start = (float)Math.Sqrt(beta_start);
@@ -42,13 +39,12 @@ namespace StableDiffusion
                 betas = np.linspace(start, end, num_train_timesteps).ToArray<float>().Select(x => x * x).ToList();
             }
             else
-            {
                 throw new Exception("beta_schedule must be one of 'linear' or 'scaled_linear'");
-            }
 
             alphas = betas.Select(beta => 1 - beta).ToList();
 
             this._alphasCumulativeProducts = alphas.Select((alpha, i) => alphas.Take(i + 1).Aggregate((a, b) => a * b)).ToList();
+
             // Create sigmas as a list and reverse it
             var sigmas = _alphasCumulativeProducts.Select(alpha_prod => Math.Sqrt((1 - alpha_prod) / alpha_prod)).Reverse().ToList();
 
@@ -69,28 +65,23 @@ namespace StableDiffusion
             sigmas = Interpolate(timesteps, range, sigmas).ToList();
             this.InitNoiseSigma = (float)sigmas.Max();
             this.Sigmas = new DenseTensor<float>(sigmas.Count());
+
             for (int i = 0; i < sigmas.Count(); i++)
-            {
                 this.Sigmas[i] = (float)sigmas[i];
-            }
 
             return this.Timesteps.ToArray();
         }
 
         public override DenseTensor<float> Step(Tensor<float> modelOutput,
-               int timestep,
-               Tensor<float> sample,
-               int order = 4
-            )
+            int timestep,
+            Tensor<float> sample,
+            int order = 4
+        )
         {
-
             if (!this.is_scale_input_called)
-            {
                 UnityEngine.Debug.Log(
-                    "The `scale_model_input` function should be called before `step` to ensure correct denoising. " +
-                    "See `StableDiffusionPipeline` for a usage example."
+                    "The 'scale_model_input' function should be called before 'step' to ensure correct denoising. See 'StableDiffusionPipeline' for a usage example."
                 );
-            }
 
             int stepIndex = this.Timesteps.IndexOf((int)timestep);
             var sigma = this.Sigmas[stepIndex];
@@ -101,7 +92,7 @@ namespace StableDiffusion
             {
                 //  pred_original_sample = sample - sigma * model_output
                 predOriginalSample = TensorHelper.SubtractTensors(sample,
-                                                                  TensorHelper.MultipleTensorByFloat(modelOutput, sigma));
+                    TensorHelper.MultipleTensorByFloat(modelOutput, sigma));
             }
             else if (this._predictionType == "v_prediction")
             {
