@@ -8,9 +8,11 @@ achieved by using `ONNX` version of the models and `OnnxRuntime` to inference at
 ## Requirements
 - [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit-archive)
 - [CUDA Deep Neural Network](https://developer.nvidia.com/cudnn)
+- [ONNX Runtime](https://onnxruntime.ai/docs/tutorials/csharp/csharp-gpu.html)
+    > as shown in the `Plugins` folder
 
 #### Supported Versions
-- This project was built on [**ONNX Runtime** `1.15.1`](https://onnxruntime.ai/docs/tutorials/csharp/csharp-gpu.html)
+- This project was built on **ONNX Runtime** `1.15.1`
     - Tested on **CUDA** `v11.6` and `v11.8`
     - Tested on **CUDNN** `v8.5.0.96`
 
